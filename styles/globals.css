@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Scriptony Design System - CSS Variables
+ * 
+ * This file defines the complete color system for Scriptony 2.0
+ * based on the existing Scriptony 1.0 UI design.
+ */
+
+@layer base {
+  :root {
+    /* Light Theme - Primary Colors */
+    --background: 240 10% 96.1%;         /* Very light gray background */
+    --foreground: 240 10% 3.9%;          /* Very dark gray text */
+    
+    /* Card and Container Colors */
+    --card: 240 10% 99%;                 /* White with subtle gray tint */
+    --card-foreground: 240 10% 3.9%;     /* Dark text on cards */
+    
+    /* Popover and Modal Colors */
+    --popover: 0 0% 100%;                /* Pure white */
+    --popover-foreground: 240 10% 3.9%;  /* Dark text in popovers */
+    
+    /* Primary Brand Colors (Scriptony Purple) */
+    --primary: 261 47% 50%;              /* #6E59A5 - Main Scriptony purple */
+    --primary-foreground: 0 0% 100%;     /* White text on purple */
+    
+    /* Secondary Colors (Light Purple Accents) */
+    --secondary: 258 100% 93%;           /* #E5DEFF - Light purple background */
+    --secondary-foreground: 262 31% 34%; /* #4A3D70 - Dark purple text */
+    
+    /* Muted Colors (Subtle UI Elements) */
+    --muted: 240 4.8% 92.9%;            /* Light gray for muted backgrounds */
+    --muted-foreground: 240 3.8% 46.1%; /* Medium gray for muted text */
+    
+    /* Accent Colors (Blue Highlights) */
+    --accent: 196 84% 60%;               /* #33C3F0 - Bright blue accent */
+    --accent-foreground: 240 10% 3.9%;  /* Dark text on blue accent */
+    
+    /* Additional Accent (Pink) */
+    --accent-pink: 326 84% 60%;          /* #D946EF - Pink accent color */
+    
+    /* Destructive Colors (Error States) */
+    --destructive: 0 84.2% 60.2%;        /* Red for errors */
+    --destructive-foreground: 0 0% 98%;  /* White text on red */
+    
+    /* Border and Input Colors */
+    --border: 240 5.9% 88%;              /* Light gray borders */
+    --input: 240 5.9% 88%;               /* Input field borders */
+    --ring: 261 47% 50%;                 /* Focus ring color (primary) */
+    
+    /* Design System Variables */
+    --radius: 0.5rem;                    /* Default border radius (8px) */
+    
+    /* Sidebar Specific Colors (Light Theme) */
+    --sidebar-background: 240 10% 98%;   /* Almost white sidebar */
+    --sidebar-foreground: 240 10% 3.9%;  /* Dark text in sidebar */
+    --sidebar-primary: 261 47% 50%;      /* Primary color in sidebar */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on primary */
+    --sidebar-accent: 260 30% 90%;       /* Light purple sidebar accent */
+    --sidebar-accent-foreground: 262 31% 34%; /* Dark purple sidebar text */
+    --sidebar-border: 240 5.9% 88%;      /* Sidebar border color */
+    --sidebar-ring: 261 47% 50%;         /* Sidebar focus ring */
+  }
+
+  .dark {
+    /* Dark Theme Colors */
+    --background: 262 15% 11%;           /* Dark purple-gray background */
+    --foreground: 258 100% 93%;          /* Light purple text */
+    
+    /* Card and Container Colors (Dark) */
+    --card: 262 15% 16%;                 /* Darker purple-gray cards */
+    --card-foreground: 258 100% 93%;     /* Light text on dark cards */
+    
+    /* Popover and Modal Colors (Dark) */
+    --popover: 262 15% 11%;              /* Dark popover background */
+    --popover-foreground: 258 100% 93%;  /* Light text in popovers */
+    
+    /* Primary Colors (Dark Theme) */
+    --primary: 261 47% 60%;              /* Slightly lighter purple for dark */
+    --primary-foreground: 0 0% 100%;     /* White text remains */
+    
+    /* Secondary Colors (Dark Theme) */
+    --secondary: 262 31% 34%;            /* #4A3D70 - Darker purple */
+    --secondary-foreground: 258 100% 93%; /* Light purple text */
+    
+    /* Muted Colors (Dark Theme) */
+    --muted: 262 15% 25%;                /* Dark muted background */
+    --muted-foreground: 260 10% 65%;     /* Medium light muted text */
+    
+    /* Accent Colors (Dark Theme) */
+    --accent: 196 84% 50%;               /* Slightly darker blue */
+    --accent-foreground: 0 0% 100%;      /* White text on blue */
+    
+    /* Accent Pink (Dark Theme) */
+    --accent-pink: 326 84% 55%;          /* Slightly darker pink */
+    
+    /* Destructive Colors (Dark Theme) */
+    --destructive: 0 72.2% 50.6%;        /* Darker red */
+    --destructive-foreground: 0 0% 98%;  /* Light text on red */
+    
+    /* Border and Input Colors (Dark) */
+    --border: 262 15% 25%;               /* Dark borders */
+    --input: 262 15% 25%;                /* Dark input borders */
+    --ring: 261 47% 60%;                 /* Lighter focus ring for dark */
+    
+    /* Sidebar Specific Colors (Dark Theme) */
+    --sidebar-background: 262 15% 13%;   /* Darker than main background */
+    --sidebar-foreground: 258 100% 93%;  /* Light text */
+    --sidebar-primary: 261 47% 60%;      /* Lighter primary for dark */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text */
+    --sidebar-accent: 262 31% 34%;       /* Dark purple accent */
+    --sidebar-accent-foreground: 258 100% 93%; /* Light accent text */
+    --sidebar-border: 262 15% 25%;       /* Dark sidebar border */
+    --sidebar-ring: 261 47% 60%;         /* Sidebar focus ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Smooth scrolling for the entire page */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Improved focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  
+  /* Custom scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-md;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+  
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.2) hsl(var(--muted));
+  }
+}
+
+/* Component-specific utilities */
+@layer components {
+  /* Typography utilities */
+  .heading-1 {
+    @apply text-4xl font-bold tracking-tight lg:text-5xl;
+  }
+  
+  .heading-2 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+  
+  .heading-3 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  
+  .heading-4 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  
+  .body-large {
+    @apply text-lg;
+  }
+  
+  .body-default {
+    @apply text-base;
+  }
+  
+  .body-small {
+    @apply text-sm;
+  }
+  
+  .caption {
+    @apply text-xs text-muted-foreground;
+  }
+  
+  /* Interactive element utilities */
+  .interactive-hover {
+    @apply transition-colors hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  .button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95;
+  }
+  
+  .button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/90;
+  }
+  
+  .button-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  /* Card utilities */
+  .card-base {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+  
+  .card-hover {
+    @apply transition-shadow hover:shadow-md;
+  }
+  
+  /* Layout utilities */
+  .container-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-spacing {
+    @apply py-8 sm:py-12 lg:py-16;
+  }
+}

@@ -1,0 +1,387 @@
+// Scriptony 2.0 Database Schema
+// This schema defines the complete data model for the Scriptony application
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ProjectType {
+  MOVIE
+  SERIES
+  SHORT
+  THEATERSTUECK
+  HOERSPIEL
+  BUCH
+  SOCIAL_VIDEO
+}
+
+enum VideoFormat {
+  SHORTFORM
+  LONGFORM
+}
+
+enum NarrativeStructureType {
+  NONE
+  THREE_ACT_STRUCTURE
+  HEROS_JOURNEY
+  SAVE_THE_CAT
+  FREYTAG_PYRAMID
+  FIELD_PARADIGM
+}
+
+enum EmotionalSignificance {
+  INTRODUCTION
+  BUILDUP
+  TURNING_POINT
+  CLIMAX
+  RESOLUTION
+  FINALE
+  OTHER
+}
+
+enum GenreValue {
+  ACTION
+  ADVENTURE
+  COMEDY
+  DRAMA
+  FANTASY
+  HORROR
+  MYSTERY
+  ROMANCE
+  SCI_FI
+  SLICE_OF_LIFE
+  SUPERNATURAL
+  THRILLER
+}
+
+enum WorldCategoryType {
+  GEOGRAPHY
+  POLITICS
+  ECONOMY
+  SOCIETY
+  CULTURE
+  HISTORY
+  RELIGION
+  TECHNOLOGY
+  MAGIC_SYSTEM
+  LANGUAGES
+  CUSTOM
+}
+
+// =============================================================================
+// USER & AUTHENTICATION MODELS
+// =============================================================================
+
+/// User model - mirrors Supabase auth.users table
+model User {
+  id            String               @id @db.Uuid
+  email         String?              @unique
+  organizations OrganizationMember[]
+  apiTokens     UserApiToken[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+/// API tokens for external service integrations (encrypted)
+model UserApiToken {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id") @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String    // Human-readable name (e.g., "Claude API Key")
+  tokenEncrypted String    @map("token_encrypted") // Encrypted token value
+  service        String    // Service identifier (e.g., "CLAUDE", "OPENAI")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  lastUsedAt     DateTime? @map("last_used_at")
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("user_api_tokens")
+}
+
+// =============================================================================
+// ORGANIZATION & MULTI-TENANCY MODELS
+// =============================================================================
+
+/// Organization model - enables multi-tenancy
+model Organization {
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique // URL-friendly identifier
+  ownerId       String               @map("owner_id") @db.Uuid
+  members       OrganizationMember[]
+  projects      Project[]
+  worlds        World[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  deletedAt     DateTime?            @map("deleted_at") // Soft delete support
+  isDeleted     Boolean              @default(false) @map("is_deleted")
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([isDeleted])
+  @@map("organizations")
+}
+
+/// Organization membership with role-based access control
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  role           Role         @default(VIEWER)
+  userId         String       @map("user_id") @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+// =============================================================================
+// AUDIT & SECURITY MODELS
+// =============================================================================
+
+/// Audit log for tracking important actions within organizations
+model AuditLog {
+  id               String        @id @default(cuid())
+  timestamp        DateTime      @default(now())
+  actorUserId      String        @map("actor_user_id") @db.Uuid
+  actor            User          @relation(fields: [actorUserId], references: [id])
+  organizationId   String?       @map("organization_id")
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actionType       String        @map("action_type") // e.g., "PROJECT_CREATED", "MEMBER_INVITED"
+  targetEntityType String?       @map("target_entity_type") // e.g., "Project", "User"
+  targetEntityId   String?       @map("target_entity_id")
+  details          Json?         // Additional action context
+  ipAddress        String?       @map("ip_address")
+
+  @@index([actorUserId])
+  @@index([organizationId])
+  @@index([actionType])
+  @@index([targetEntityType, targetEntityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// =============================================================================
+// PROJECT MANAGEMENT MODELS
+// =============================================================================
+
+/// Core project model for scripts and screenplays
+model Project {
+  id                 String                 @id @default(cuid())
+  title              String
+  type               ProjectType
+  videoFormat        VideoFormat?           @map("video_format")
+  narrativeStructure NarrativeStructureType @default(NONE) @map("narrative_structure")
+  logline            String?                @db.Text
+  durationMinutes    Int?                   @map("duration_minutes")
+  coverImageUrl      String?                @map("cover_image_url")
+  organizationId     String                 @map("organization_id")
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  worldId            String?                @map("world_id")
+  world              World?                 @relation(fields: [worldId], references: [id], onDelete: SetNull)
+  scenes             Scene[]
+  characters         Character[]
+  episodes           Episode[]
+  genres             GenreOnProject[]
+  inspirations       String[]               // Array of inspiration sources
+  history            ProjectHistory[]
+  createdAt          DateTime               @default(now()) @map("created_at")
+  updatedAt          DateTime               @updatedAt @map("updated_at")
+  deletedAt          DateTime?              @map("deleted_at")
+  isDeleted          Boolean                @default(false) @map("is_deleted")
+  lastAccessedAt     DateTime?              @map("last_accessed_at")
+
+  @@index([organizationId])
+  @@index([worldId])
+  @@index([isDeleted])
+  @@index([lastAccessedAt])
+  @@map("projects")
+}
+
+/// Project change history for version control
+model ProjectHistory {
+  id              String   @id @default(cuid())
+  projectId       String   @map("project_id")
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  operation       String   // "CREATE", "UPDATE", "DELETE"
+  dataBefore      Json?    @map("data_before") // Previous state
+  dataAfter       Json?    @map("data_after") // New state
+  changedByUserId String   @map("changed_by_user_id") @db.Uuid
+  timestamp       DateTime @default(now())
+
+  @@index([projectId])
+  @@index([timestamp])
+  @@map("project_history")
+}
+
+/// Genre system with many-to-many relationship to projects
+model Genre {
+  id       String           @id @default(cuid())
+  value    GenreValue       @unique
+  name     String           // Display name
+  projects GenreOnProject[]
+
+  @@map("genres")
+}
+
+/// Junction table for project-genre relationships
+model GenreOnProject {
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String   @map("project_id")
+  genre      Genre    @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId    String   @map("genre_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String   @map("assigned_by") @db.Uuid
+
+  @@id([projectId, genreId])
+  @@map("genres_on_projects")
+}
+
+/// Episodes for series projects
+model Episode {
+  id            String   @id @default(cuid())
+  title         String
+  number        Int
+  description   String?  @db.Text
+  coverImageUrl String?  @map("cover_image_url")
+  projectId     String   @map("project_id")
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes        Scene[]
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, number])
+  @@index([projectId])
+  @@map("episodes")
+}
+
+/// Individual scenes within projects/episodes
+model Scene {
+  id                    String                 @id @default(cuid())
+  sceneNumber           String                 @map("scene_number") // Allows "1A", "2B" etc.
+  location              String?
+  timeOfDay             String?                @map("time_of_day")
+  timecodeStart         String?                @map("timecode_start")
+  timecodeEnd           String?                @map("timecode_end")
+  visualComposition     String?                @db.Text @map("visual_composition")
+  lighting              String?                @db.Text
+  colorGrading          String?                @db.Text @map("color_grading")
+  soundDesign           String?                @db.Text @map("sound_design")
+  specialEffects        String?                @db.Text @map("special_effects")
+  keyframeImageUrl      String?                @map("keyframe_image_url")
+  description           String?                @db.Text
+  dialog                String?                @db.Text
+  transitions           String?                @db.Text
+  productionNotes       String?                @db.Text @map("production_notes")
+  emotionalSignificance EmotionalSignificance? @map("emotional_significance")
+  emotionalNotes        String?                @db.Text @map("emotional_notes")
+  projectId             String                 @map("project_id")
+  project               Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  episodeId             String?                @map("episode_id")
+  episode               Episode?               @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  characters            CharacterOnScene[]
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([episodeId])
+  @@map("scenes")
+}
+
+/// Characters within projects
+model Character {
+  id          String             @id @default(cuid())
+  name        String
+  role        String? // Character role/type
+  description String?            @db.Text
+  avatarUrl   String?            @map("avatar_url")
+  projectId   String             @map("project_id")
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes      CharacterOnScene[]
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("characters")
+}
+
+/// Junction table for character-scene relationships
+model CharacterOnScene {
+  scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  sceneId     String    @map("scene_id")
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  characterId String    @map("character_id")
+  assignedAt  DateTime  @default(now()) @map("assigned_at")
+
+  @@id([sceneId, characterId])
+  @@map("characters_on_scenes")
+}
+
+// =============================================================================
+// WORLDBUILDING MODELS
+// =============================================================================
+
+/// Worldbuilding system for creating fictional universes
+model World {
+  id             String          @id @default(cuid())
+  name           String
+  description    String?         @db.Text
+  coverImageUrl  String?         @map("cover_image_url")
+  organizationId String          @map("organization_id")
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]       // Projects can be linked to worlds
+  categories     WorldCategory[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  deletedAt      DateTime?       @map("deleted_at")
+  isDeleted      Boolean         @default(false) @map("is_deleted")
+  lastAccessedAt DateTime?       @map("last_accessed_at")
+
+  @@index([organizationId])
+  @@index([isDeleted])
+  @@index([lastAccessedAt])
+  @@map("worlds")
+}
+
+/// Categorized content within worlds (geography, politics, etc.)
+model WorldCategory {
+  id         String            @id @default(cuid())
+  name       String
+  type       WorldCategoryType
+  icon       String?           // Lucide icon name
+  content    Json?             // Structured content specific to category type
+  orderIndex Int               @default(0) @map("order_index") // For custom ordering
+  worldId    String            @map("world_id")
+  world      World             @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  @@index([worldId])
+  @@index([worldId, orderIndex])
+  @@map("world_categories")
+}
