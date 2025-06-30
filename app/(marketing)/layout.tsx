@@ -1,6 +1,6 @@
-import { ScriptonyLogo } from '@/components/common/scriptony-logo';
-import { ThemeToggle } from '@/components/common/theme-toggle';
-import { Button } from '@/components/ui/button';
+import { ScriptonyLogo } from '../../components/common/scriptony-logo';
+import { ThemeToggle } from '../../components/common/theme-toggle';
+import { Button } from '../../components/ui/button';
 import Link from 'next/link';
 
 interface MarketingLayoutProps {
